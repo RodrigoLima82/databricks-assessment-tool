@@ -1,0 +1,258 @@
+read_terraform_files_task:
+  description: |
+    Use the Terraform Directory Summarizer tool to analyze all Terraform files in {directory_path}.
+    This tool generates a statistical summary without reading all file contents, optimized for
+    rate-limit constraints. The summary includes:
+    - Total counts of each resource type (clusters, jobs, notebooks, users, etc.)
+    - Key configuration patterns (autoscaling, node types, runtimes, schedules)
+    - Compute configurations (cluster sizes, autoscaling settings)
+    - Job statistics (task counts, scheduled jobs, notifications)
+    - SQL Compute details (warehouse sizes, auto-stop configurations)
+    - User and group information (including administrators)
+    - Code file counts (.py and .sql notebooks)
+    
+    **IMPORTANT**: Use the "Terraform Directory Summarizer" tool with the directory path
+    provided in {directory_path}. This will return a complete statistical summary.
+    
+    **SAVE YOUR ANALYSIS**: After analyzing, use FileWriterTool to save your findings to:
+    {output_file_path}Terraform_Infrastructure_Analysis.md
+  expected_output: |
+    A structured report saved as Terraform_Infrastructure_Analysis.md containing:
+    - A breakdown of all key components and configurations extracted from the Terraform files.
+    - Quantities of each resource type
+    - Resource counts and compute configurations.
+    - Detailed summaries of jobs, clusters, and SQL Compute settings.
+    - Counts of administrators, catalogs, tables, schemas, and code files.
+    
+    MUST use FileWriterTool to save the file.
+  async_execution: false
+  agent: terraform_reader
+
+databricks_assessment:
+  description: |
+    Conduct a thorough review of all Databricks configurations identified from the Terraform files. 
+    Provide insights, highlight deviations from best practices, and suggest optimizations. 
+    
+    **EXCLUDE FINANCIAL TOPICS**: Do NOT include cost optimization, financial impact, or budget recommendations.
+    
+    Focus on:
+    - Identification of non-standard or modified settings.
+    - Quantities of each resource type
+    - Detection of oversized clusters or inefficient autoscaling configurations.
+    - Analysis of external libraries and their usage.
+    - Clusters not enabled with Unity Catalog.
+    - Databricks Runtime versions older than 14.3.
+    - Jobs assigned to individual (personal) owners.
+    - Jobs lacking configured alerts.
+    - High-access or security concerns (e.g., overly permissive access).
+    - SQL Compute resources that are over-provisioned.
+    - Workspace administrators and their activities.
+    - Additional best practice recommendations tailored to the specific environment.
+    
+    **SAVE YOUR ANALYSIS**: After analyzing, use FileWriterTool to save your findings to:
+    {output_file_path}Databricks_Security_Performance_Analysis.md
+  expected_output: |
+    A comprehensive report saved as Databricks_Security_Performance_Analysis.md including:
+    - Identified non-standard configurations.
+    - Quantities of each resource type
+    - Potential security risks and misconfigurations.
+    - Recommendations for cluster right-sizing and optimization.
+    - Best practices to improve overall efficiency and security.
+    
+    MUST use FileWriterTool to save the file.
+    DO NOT include financial or cost information.
+  async_execution: false
+  agent: databricks_specialist
+  context:
+    - read_terraform_files_task
+
+analyze_ucx_assessment:
+  description: |
+    Perform a COMPREHENSIVE and DETAILED Unity Catalog Migration (UCX) assessment analysis from {ucx_directory}.
+    
+    **EXCLUDE FINANCIAL TOPICS**: Do NOT include migration timeline, cost estimates, or budget information.
+    
+    **DETAILED ANALYSIS REQUIRED**: Extract ALL available information:
+    
+    1. **Assessment Overview**:
+       - Client/workspace name
+       - Assessment date
+       - Total objects assessed
+       - Overall readiness score (if available)
+    
+    2. **Detailed Inventory**:
+       - Tables: Total count, formats (delta, parquet, csv, etc.), locations
+       - Views: Count and dependencies
+       - Databases/Schemas: Count and naming patterns
+       - Jobs: Count, types, dependencies
+       - Notebooks: Count, languages used
+       - Clusters: Count, configurations
+       - Mounts: Count, types, external locations
+    
+    3. **Compatibility Analysis**:
+       - UC-compatible objects (count and %)
+       - Non-compatible objects (count, %, detailed list)
+       - Partially compatible (count, %, what needs fixing)
+       - Objects by compatibility category
+    
+    4. **Blockers and Issues** (CRITICAL - Be very detailed):
+       - HIGH priority blockers (detailed description)
+       - MEDIUM priority issues (detailed description)
+       - LOW priority warnings (detailed description)
+       - Specific technical blockers (e.g., DBFS dependencies, external locations, legacy features)
+       - Objects requiring manual migration
+       - Deprecated features in use
+    
+    5. **Security and Governance**:
+       - Current ACLs vs UC required permissions
+       - Service principals and their usage
+       - External locations requiring configuration
+       - Storage credentials needed
+    
+    6. **Dependencies and Complexity**:
+       - Cross-database dependencies
+       - External data source dependencies
+       - Complex transformations
+       - Legacy code patterns
+    
+    7. **Recommendations** (Technical only):
+       - Immediate actions required
+       - Objects to prioritize for migration
+       - Technical configurations needed
+       - Best practices to implement
+    
+    **USE TABLES**: Present data in markdown tables for clarity.
+    **BE SPECIFIC**: Include object names, counts, and specific issues.
+    **NO GENERIC TEXT**: Use real data from the assessment files.
+    
+    **SAVE YOUR ANALYSIS**: After analyzing, use FileWriterTool to save your findings to:
+    {output_file_path}UCX_Migration_Assessment.md
+    
+  expected_output: |
+    COMPREHENSIVE report saved as UCX_Migration_Assessment.md containing:
+    - Complete inventory with counts and percentages
+    - Detailed compatibility breakdown (tables)
+    - Specific blockers with technical descriptions
+    - Objects status and categories
+    - Actionable technical recommendations
+    
+    Target: 300-500 lines with structured markdown.
+    Use tables for metrics, bullets for findings.
+    Focus on CRITICAL information from assessment.
+    
+    MUST use FileWriterTool to save the file.
+    NO timeline estimates or financial information.
+  async_execution: false
+  agent: ucx_analyst
+  max_iter: 25
+  max_rpm: 10
+
+generate_report_task:
+  description: |
+    Generate ONE SINGLE CONSOLIDATED assessment report using EXCLUSIVELY data from your context.
+    
+    🚨 **ABSOLUTE RULES - NO EXCEPTIONS** 🚨:
+    
+    1. **INSPECT YOUR CONTEXT FIRST**:
+       - Check which agents provided output in your context
+       - Identify what data is ACTUALLY available
+       - DO NOT proceed until you know EXACTLY what data you have
+    
+    2. **ZERO TOLERANCE FOR INVENTED DATA**:
+       - You are FORBIDDEN from creating, estimating, or inventing ANY data
+       - Every number, metric, finding MUST come from context
+       - If context is empty → Write "No data available from agents"
+       - If agent didn't run → SKIP that entire section
+    
+    3. **DYNAMIC SECTIONS**:
+       - ONLY include sections where you have ACTUAL context data
+       - Examples:
+         * NO Terraform context? → SKIP Infrastructure section ENTIRELY
+         * NO UCX context? → SKIP UCX section ENTIRELY
+         * NO Databricks context? → SKIP Architecture section ENTIRELY
+    
+    4. **VERIFICATION BEFORE WRITING**:
+       - Before writing each section, ask: "Do I have context data for this?"
+       - If answer is NO → SKIP the section
+       - If answer is YES → Use ONLY that context data
+    
+    5. **FORBIDDEN CONTENT**:
+       - NO Financial Impact, Cost Optimization, Migration Timeline
+       - NO Implementation Plans, Budget info, Appendix
+       - NO generic best practices without supporting data
+       - NO example data or placeholder values
+    
+    **REPORT STRUCTURE** (adapt to available context):
+    
+    # Databricks Assessment Report
+    
+    **Assessment Date:** October 2025
+    **Agents Executed:** [List ALL agents in your context - terraform_reader, databricks_specialist, ucx_analyst if they ran]
+    **Data Sources:** [List ALL actual data sources from context]
+    
+    ---
+    
+    ## Executive Summary
+    - Overview of ALL analyses performed (from context)
+    - Key findings from ALL agent outputs (Terraform + Databricks + UCX)
+    - Include metrics from ALL agents that executed
+    - If NO context data: "No analysis performed - no data available"
+    
+    ## [Dynamic Sections - Include ALL sections with context data]
+    
+    ### Infrastructure Analysis
+    **CONDITION**: ONLY if terraform_reader in context
+    **CONTENT**: Use ONLY data from Terraform Reader context
+    **IF NO DATA**: SKIP THIS SECTION ENTIRELY
+    
+    ### Architecture & Security Assessment
+    **CONDITION**: ONLY if databricks_specialist in context
+    **CONTENT**: Use ONLY data from Databricks Specialist context
+    **IF NO DATA**: SKIP THIS SECTION ENTIRELY
+    
+    ### UCX Migration Assessment ⚠️ CRITICAL
+    **CONDITION**: ONLY if ucx_analyst in context
+    **CONTENT**: Use ALL data from UCX Analyst context:
+       - Files analyzed (list Excel files)
+       - Tables discovered and counts
+       - Compatibility analysis
+       - Blockers and issues (HIGH/MEDIUM/LOW priority)
+       - Migration recommendations
+    **IF NO DATA**: SKIP THIS SECTION ENTIRELY
+    **NOTE**: This is CRITICAL data - if available in context, MUST be included in detail!
+    
+    ## Technical Recommendations
+    - Based EXCLUSIVELY on findings from agents that executed
+    - NO recommendations without supporting data
+    - If no context data: "No recommendations - no analysis data available"
+    
+    ---
+    
+    **FILE REQUIREMENTS**:
+    - Use FileWriterTool to save to: {output_file_path}Databricks_Assessment_Report.md
+    - Format: Clean Markdown (tables + bullets)
+    - Length: 200-400 lines MAX
+    - Style: Concise, technical, executive-ready
+    
+    **FINAL VALIDATION** (before saving):
+    ✓ Did I check my context before starting?
+    ✓ Did I skip sections where I have no context data?
+    ✓ Did I remove ALL invented/estimated data?
+    ✓ Is every statement backed by actual context?
+    ✓ Did I list only the agents that actually ran?
+    
+  expected_output: |
+    ONE file "Databricks_Assessment_Report.md" saved to {output_file_path}.
+    
+    The report MUST:
+    - Use FileWriterTool to save
+    - Include ONLY sections with real context data
+    - Be 200-400 lines, tables and bullets
+    - List which agents executed
+    - Contain ZERO invented data
+    
+    If NO agents provided context → Report says "No analysis data available"
+    
+  async_execution: false
+  agent: report_generator
+  # NO HARDCODED CONTEXT - Will be set dynamically by crew.py

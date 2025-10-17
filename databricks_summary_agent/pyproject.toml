@@ -1,0 +1,27 @@
+[project]
+name = "terraform_file_summary_agent"
+version = "0.1.0"
+description = "terraform_file_summary_agent using crewAI"
+authors = [{ name = "Databricks Assessment Tool", email = "assessment-tool@example.com" }]
+requires-python = ">=3.10,<=3.13"
+dependencies = [
+    "crewai[tools]>=0.76.9,<1.0.0",
+    "onnxruntime==1.15.0",
+    "socksio>=1.0.0",
+    "pyarrow==17.0.0",
+    "litellm>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.0.0",
+]
+
+[project.scripts]
+terraform_file_summary_agent = "terraform_file_summary_agent.main:run"
+run_crew = "terraform_file_summary_agent.main:run"
+train = "terraform_file_summary_agent.main:train"
+replay = "terraform_file_summary_agent.main:replay"
+test = "terraform_file_summary_agent.main:test"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

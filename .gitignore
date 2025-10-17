@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+backend.log
+frontend.log
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+.terraform/
+.terraform.lock.hcl
+
+# Reports and temp files (may contain sensitive data)
+output_summary_agent/
+output_old/
+databricks_tf_files/
+ucx_export/
+execution_state.json
+*.pdf
+
+# Backup files
+*.bak
+*.backup
+
+# OS
+Thumbs.db
