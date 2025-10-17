@@ -208,7 +208,9 @@ export default function ExecutionStep({ onNext, onBack, config }) {
     }
   }
 
-  const allCompleted = executionSteps.every((step) => step.status === 'completed')
+  // Only show "View Results" if there are steps AND all are completed
+  // Empty array would incorrectly return true for .every()
+  const allCompleted = executionSteps.length > 0 && executionSteps.every((step) => step.status === 'completed')
 
   return (
     <Box>
