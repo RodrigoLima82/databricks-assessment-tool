@@ -43,6 +43,24 @@ export default function ExecutionStep({ onNext, onBack, config }) {
   const [showLogs, setShowLogs] = useState(true)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [startTime, setStartTime] = useState(null)
+  const [hasExistingReports, setHasExistingReports] = useState(false)
+
+  // Check for existing reports on mount
+  useEffect(() => {
+    const checkExistingReports = async () => {
+      try {
+        const response = await axios.get('/api/results/list')
+        const existingReports = response.data.reports.filter(r => r.exists)
+        if (existingReports.length > 0) {
+          setHasExistingReports(true)
+          console.log(`Found ${existingReports.length} existing reports`)
+        }
+      } catch (error) {
+        console.log('No existing reports found')
+      }
+    }
+    checkExistingReports()
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -118,6 +136,7 @@ export default function ExecutionStep({ onNext, onBack, config }) {
       })
     } else if (data.type === 'completed') {
       setExecuting(false)
+      setHasExistingReports(true) // Mark that reports now exist
       // Wait a bit before proceeding to results
       setTimeout(() => {
         onNext({ success: true })
@@ -136,6 +155,7 @@ export default function ExecutionStep({ onNext, onBack, config }) {
     setError(null)
     setStartTime(Date.now())
     setElapsedTime(0)
+    setHasExistingReports(false) // Reset on new execution
     
     // Build execution steps based on selected options
     const steps = []
@@ -208,9 +228,12 @@ export default function ExecutionStep({ onNext, onBack, config }) {
     }
   }
 
-  // Only show "View Results" if there are steps AND all are completed
-  // Empty array would incorrectly return true for .every()
-  const allCompleted = executionSteps.length > 0 && executionSteps.every((step) => step.status === 'completed')
+  // Show "View Results" and "Run Again" if:
+  // 1. Execution just completed (executionSteps has completed steps)
+  // 2. OR there are existing reports from a previous execution
+  const allCompleted = 
+    (executionSteps.length > 0 && executionSteps.every((step) => step.status === 'completed')) ||
+    hasExistingReports
 
   return (
     <Box>
