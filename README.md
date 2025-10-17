@@ -192,7 +192,7 @@ UCX_DIR=ucx_export
 
 ⚠️ **IMPORTANTE**: O binário do Terraform Provider Databricks **não está incluído no Git** (por ser um arquivo binário grande). Você precisa instalá-lo localmente antes de rodar a aplicação.
 
-#### Opção A: Instalação Automática via Terraform (Recomendado)
+#### Instalação Automática via Terraform
 
 ```bash
 # 1. Crie um arquivo terraform de configuração temporário
@@ -215,46 +215,6 @@ rm init.tf
 
 # 4. Verifique a instalação
 ls -lh .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/*/terraform-provider-databricks_v1.91.0
-```
-
-#### Opção B: Download Manual
-
-**macOS ARM64 (Apple Silicon):**
-```bash
-mkdir -p .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/darwin_arm64
-cd .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/darwin_arm64
-curl -LO https://github.com/databricks/terraform-provider-databricks/releases/download/v1.91.0/terraform-provider-databricks_1.91.0_darwin_arm64.zip
-unzip terraform-provider-databricks_1.91.0_darwin_arm64.zip
-chmod +x terraform-provider-databricks_v1.91.0
-cd -
-```
-
-**macOS Intel (x86_64):**
-```bash
-mkdir -p .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/darwin_amd64
-cd .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/darwin_amd64
-curl -LO https://github.com/databricks/terraform-provider-databricks/releases/download/v1.91.0/terraform-provider-databricks_1.91.0_darwin_amd64.zip
-unzip terraform-provider-databricks_1.91.0_darwin_amd64.zip
-chmod +x terraform-provider-databricks_v1.91.0
-cd -
-```
-
-**Linux:**
-```bash
-mkdir -p .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/linux_amd64
-cd .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/linux_amd64
-curl -LO https://github.com/databricks/terraform-provider-databricks/releases/download/v1.91.0/terraform-provider-databricks_1.91.0_linux_amd64.zip
-unzip terraform-provider-databricks_1.91.0_linux_amd64.zip
-chmod +x terraform-provider-databricks_v1.91.0
-cd -
-```
-
-**Verificação da Instalação:**
-```bash
-# O binário deve estar em um desses caminhos (dependendo do seu sistema):
-.terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/darwin_arm64/terraform-provider-databricks_v1.91.0
-.terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/darwin_amd64/terraform-provider-databricks_v1.91.0
-.terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/linux_amd64/terraform-provider-databricks_v1.91.0
 ```
 
 ### 4. Instalar Dependências

@@ -77,6 +77,9 @@ class TerraformExporter:
                 await callback("status", "terraform", "error", error_msg)
             return {"success": False, "error": error_msg}
         
+        # Create output directory if it doesn't exist
+        TF_FILES_DIR.mkdir(parents=True, exist_ok=True)
+        
         # Clean previous exports
         logger.info("Cleaning previous exports...")
         if callback:
@@ -235,6 +238,9 @@ class AIAgentsAnalyzer:
             logger.info(f"🔍 Files: {', '.join([f.name for f in tf_files[:5]])}{'...' if len(tf_files) > 5 else ''}")
         else:
             logger.info("ℹ️  Terraform reader agent not selected, skipping TF files validation")
+        
+        # Create output directory if it doesn't exist
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # Clean previous reports
         logger.info("🗑️  Cleaning previous reports...")

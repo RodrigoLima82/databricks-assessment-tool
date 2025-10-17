@@ -284,7 +284,7 @@ async def upload_ucx_file(file: UploadFile = File(...)):
     """Upload UCX assessment CSV/Excel file"""
     try:
         # Ensure UCX directory exists
-        UCX_DIR.mkdir(exist_ok=True)
+        UCX_DIR.mkdir(parents=True, exist_ok=True)
         
         # Save uploaded file
         file_path = UCX_DIR / file.filename
