@@ -51,8 +51,14 @@ def run():
         print(f"   - directory_path: {inputs['directory_path']}")
         print(f"   - output_file_path: {inputs['output_file_path']}")
         print(f"   - ucx_directory: {inputs['ucx_directory']}")
+        
         print(f"\n{'='*80}")
         print(f"🚀 EXECUTING CREW...")
+        print(f"{'='*80}")
+        print(f"🔍 DEBUG: Crew has {len(crew.agents)} agents and {len(crew.tasks)} tasks")
+        print(f"🔍 DEBUG: Process: {crew.process}")
+        print(f"🔍 DEBUG: Verbose: {crew.verbose}")
+        print(f"\n🔍 DEBUG: Starting kickoff...")
         print(f"{'='*80}\n")
         
         result = crew.kickoff(inputs=inputs)
@@ -60,6 +66,9 @@ def run():
         print(f"\n{'='*80}")
         print(f"✅ CREW EXECUTION COMPLETED")
         print(f"{'='*80}")
+        print(f"🔍 DEBUG: Result object type: {type(result)}")
+        print(f"🔍 DEBUG: Has 'raw' attribute: {hasattr(result, 'raw')}")
+        print(f"🔍 DEBUG: Has 'token_usage' attribute: {hasattr(result, 'token_usage')}")
     else:
         # Run all agents
         print(f"\n🎯 Running with all agents\n")
@@ -75,14 +84,35 @@ def run():
     print(f"\n>>>>>>>>>>>>>>>>>> Result Info <<<<<<<<<<<<<<<<<")
     print(f"Raw output length: {len(result.raw) if hasattr(result, 'raw') else 'N/A'}")
     print(f"Result type: {type(result)}")
+    print(f"Result attributes: {dir(result)}")
+    
+    # Try to access task outputs
+    if hasattr(result, 'tasks_output'):
+        print(f"\n🔍 DEBUG: Tasks Output Available")
+        print(f"Tasks Output Type: {type(result.tasks_output)}")
+        print(f"Number of Task Outputs: {len(result.tasks_output) if hasattr(result.tasks_output, '__len__') else 'N/A'}")
+        
+        if hasattr(result.tasks_output, '__iter__'):
+            for idx, task_output in enumerate(result.tasks_output, 1):
+                print(f"\n  Task Output {idx}:")
+                print(f"    Type: {type(task_output)}")
+                print(f"    Attributes: {dir(task_output)}")
+                if hasattr(task_output, 'raw'):
+                    print(f"    Raw output length: {len(task_output.raw)}")
+                    print(f"    Raw output preview: {task_output.raw[:200]}...")
     
     # Check if report was generated
     import glob
     reports = glob.glob(f"{inputs['output_file_path']}/*.md")
     print(f"\n>>>>>>>>>>>>>>>>>> Generated Files <<<<<<<<<<<<<<<<<")
+    print(f"Output directory: {inputs['output_file_path']}")
     print(f"Reports found: {len(reports)}")
     for report in reports:
+        file_size = os.path.getsize(report)
+        with open(report, 'r') as f:
+            lines = len(f.readlines())
         print(f"  - {report}")
+        print(f"    Size: {file_size} bytes, Lines: {lines}")
 
 
 def train():
