@@ -1,37 +1,53 @@
 """
-PDF Generation module using WeasyPrint (HTML to PDF)
-No external dependencies like pandoc required!
+PDF Generation module - CROSS-PLATFORM
+Tries multiple libraries in order of preference:
+1. WeasyPrint (best quality, macOS/Linux with GTK)
+2. xhtml2pdf (good quality, pure Python, Windows-friendly)
+3. reportlab (fallback, always works, limited HTML)
 """
 
 import os
+import platform
 from pathlib import Path
 from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Try to import PDF libraries (in order of preference)
 try:
     from weasyprint import HTML, CSS
     WEASYPRINT_AVAILABLE = True
+    logger.info("✅ WeasyPrint available (best quality)")
 except ImportError:
     WEASYPRINT_AVAILABLE = False
-    logger.warning("WeasyPrint not available. PDF export will be limited.")
+    logger.debug("WeasyPrint not available (OK on Windows)")
+
+try:
+    from xhtml2pdf import pisa
+    XHTML2PDF_AVAILABLE = True
+    logger.info("✅ xhtml2pdf available (Windows-friendly)")
+except ImportError:
+    XHTML2PDF_AVAILABLE = False
+    logger.debug("xhtml2pdf not available")
+
+try:
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER
+    REPORTLAB_AVAILABLE = True
+    logger.info("✅ reportlab available (fallback)")
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+    logger.debug("reportlab not available")
 
 
-def html_to_pdf(html_content: str, output_path: str, title: str = "Databricks Assessment Report") -> bool:
-    """
-    Convert HTML content to PDF using WeasyPrint.
-    
-    Args:
-        html_content: HTML string to convert
-        output_path: Where to save the PDF
-        title: Document title
-    
-    Returns:
-        True if successful, False otherwise
-    """
+def html_to_pdf_weasyprint(html_content: str, output_path: str, title: str) -> bool:
+    """WeasyPrint PDF generation (best quality, requires GTK)"""
     if not WEASYPRINT_AVAILABLE:
-        logger.error("WeasyPrint not installed. Install with: pip install weasyprint")
         return False
     
     try:
@@ -183,12 +199,174 @@ def html_to_pdf(html_content: str, output_path: str, title: str = "Databricks As
         
         html_doc.write_pdf(output_path, stylesheets=[css])
         
-        logger.info(f"✅ PDF generated successfully: {output_path}")
+        logger.info(f"✅ PDF generated successfully (WeasyPrint): {output_path}")
         return True
         
     except Exception as e:
-        logger.exception(f"Error generating PDF: {e}")
+        logger.error(f"WeasyPrint error: {e}")
         return False
+
+
+def html_to_pdf_xhtml2pdf(html_content: str, output_path: str, title: str) -> bool:
+    """xhtml2pdf PDF generation (Windows-friendly, pure Python)"""
+    if not XHTML2PDF_AVAILABLE:
+        return False
+    
+    try:
+        # CSS simplificado para xhtml2pdf (suporte CSS mais limitado)
+        css_string = """
+        <style>
+            @page { size: A4; margin: 2cm; }
+            body { font-family: Arial, sans-serif; font-size: 11pt; color: #333; }
+            h1 { color: #FF3621; border-bottom: 3px solid #FF3621; padding-bottom: 10px; }
+            h2 { color: #FF8A00; border-left: 4px solid #FF8A00; padding-left: 10px; }
+            h3 { color: #1B3139; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th { background-color: #1B3139; color: white; padding: 12px; text-align: left; }
+            td { padding: 10px; border-bottom: 1px solid #ddd; }
+            tr:nth-child(even) { background-color: #f8f9fa; }
+            code { background-color: #f4f4f4; padding: 2px 6px; font-family: monospace; }
+            pre { background-color: #1B3139; color: #fff; padding: 15px; }
+        </style>
+        """
+        
+        full_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>{title}</title>
+            {css_string}
+        </head>
+        <body>
+            <h1 style="text-align: center;">{title}</h1>
+            <hr/>
+            {html_content}
+        </body>
+        </html>
+        """
+        
+        with open(output_path, "wb") as output_file:
+            pisa_status = pisa.CreatePDF(
+                full_html.encode('utf-8'),
+                dest=output_file,
+                encoding='utf-8'
+            )
+        
+        if pisa_status.err:
+            logger.error(f"xhtml2pdf errors: {pisa_status.err}")
+            return False
+        
+        logger.info(f"✅ PDF generated successfully (xhtml2pdf): {output_path}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"xhtml2pdf error: {e}")
+        return False
+
+
+def html_to_pdf_reportlab(html_content: str, output_path: str, title: str) -> bool:
+    """reportlab PDF generation (fallback, limited HTML support)"""
+    if not REPORTLAB_AVAILABLE:
+        return False
+    
+    try:
+        import re
+        
+        doc = SimpleDocTemplate(output_path, pagesize=A4)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Title
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#FF3621'),
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        story.append(Paragraph(title, title_style))
+        story.append(Spacer(1, 0.2 * inch))
+        
+        # Simple HTML to text conversion
+        text = html_content
+        text = re.sub(r'<h1[^>]*>(.*?)</h1>', r'\n\n## \1 ##\n\n', text, flags=re.DOTALL)
+        text = re.sub(r'<h2[^>]*>(.*?)</h2>', r'\n\n# \1 #\n\n', text, flags=re.DOTALL)
+        text = re.sub(r'<h3[^>]*>(.*?)</h3>', r'\n\n> \1\n\n', text, flags=re.DOTALL)
+        text = re.sub(r'<[^>]+>', '', text)
+        text = text.replace('&nbsp;', ' ').replace('&amp;', '&')
+        
+        # Add paragraphs
+        for line in text.split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            
+            if line.startswith('## ') and line.endswith(' ##'):
+                h1_style = ParagraphStyle('H1', parent=styles['Heading1'], fontSize=18, textColor=colors.HexColor('#FF8A00'))
+                story.append(Paragraph(line[3:-3], h1_style))
+                story.append(Spacer(1, 0.2 * inch))
+            elif line.startswith('# ') and line.endswith(' #'):
+                h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=14, textColor=colors.HexColor('#1B3139'))
+                story.append(Paragraph(line[2:-2], h2_style))
+                story.append(Spacer(1, 0.15 * inch))
+            elif line.startswith('> '):
+                h3_style = ParagraphStyle('H3', parent=styles['Heading3'], fontSize=12)
+                story.append(Paragraph(line[2:], h3_style))
+                story.append(Spacer(1, 0.1 * inch))
+            else:
+                story.append(Paragraph(line, styles['BodyText']))
+                story.append(Spacer(1, 0.1 * inch))
+        
+        doc.build(story)
+        
+        logger.info(f"✅ PDF generated successfully (reportlab): {output_path}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"reportlab error: {e}")
+        return False
+
+
+def html_to_pdf(html_content: str, output_path: str, title: str = "Databricks Assessment Report") -> bool:
+    """
+    Convert HTML to PDF using best available method.
+    Tries in order: WeasyPrint → xhtml2pdf → reportlab
+    
+    Args:
+        html_content: HTML string to convert
+        output_path: Where to save the PDF
+        title: Document title
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    # Try WeasyPrint first (best quality)
+    if WEASYPRINT_AVAILABLE:
+        logger.info("Attempting PDF generation with WeasyPrint...")
+        if html_to_pdf_weasyprint(html_content, output_path, title):
+            return True
+        logger.warning("WeasyPrint failed, trying alternatives...")
+    
+    # Try xhtml2pdf (Windows-friendly)
+    if XHTML2PDF_AVAILABLE:
+        logger.info("Attempting PDF generation with xhtml2pdf...")
+        if html_to_pdf_xhtml2pdf(html_content, output_path, title):
+            return True
+        logger.warning("xhtml2pdf failed, trying alternatives...")
+    
+    # Try reportlab (fallback)
+    if REPORTLAB_AVAILABLE:
+        logger.info("Attempting PDF generation with reportlab...")
+        if html_to_pdf_reportlab(html_content, output_path, title):
+            return True
+        logger.error("reportlab failed")
+    
+    # No library available or all failed
+    logger.error("❌ PDF generation failed: No working library available")
+    logger.error("Install one of: pip install weasyprint xhtml2pdf reportlab")
+    return False
 
 
 def markdown_to_html(markdown_content: str) -> str:

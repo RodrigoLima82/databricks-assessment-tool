@@ -1,10 +1,11 @@
 """
 Execution modules for Terraform export and AI agents analysis.
-Replaces shell scripts with Python for better integration and maintainability.
+CROSS-PLATFORM: Automatically detects OS (Windows, macOS, Linux) and architecture.
 """
 
 import os
 import sys
+import platform
 import asyncio
 import subprocess
 from pathlib import Path
@@ -29,15 +30,75 @@ else:
     logger.warning(f"⚠️  .env file not found at {env_file}")
 
 
+def get_terraform_binary_path() -> Optional[Path]:
+    """
+    Detect Terraform provider binary based on OS and architecture.
+    Supports: Windows (x64/ARM), macOS (Intel/Apple Silicon), Linux (x64/ARM)
+    
+    Returns:
+        Path to terraform provider binary or None if not found
+    """
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    
+    # Determine platform string for terraform provider
+    if system == "windows":
+        if "amd64" in machine or "x86_64" in machine:
+            platform_str = "windows_amd64"
+            binary_name = "terraform-provider-databricks_v1.91.0.exe"
+        elif "arm" in machine or "aarch64" in machine:
+            platform_str = "windows_arm64"
+            binary_name = "terraform-provider-databricks_v1.91.0.exe"
+        else:
+            logger.error(f"Unsupported Windows architecture: {machine}")
+            return None
+    
+    elif system == "darwin":  # macOS
+        if "arm" in machine or "aarch64" in machine:
+            platform_str = "darwin_arm64"
+            binary_name = "terraform-provider-databricks_v1.91.0"
+        else:
+            platform_str = "darwin_amd64"
+            binary_name = "terraform-provider-databricks_v1.91.0"
+    
+    elif system == "linux":
+        if "aarch64" in machine or "arm64" in machine:
+            platform_str = "linux_arm64"
+            binary_name = "terraform-provider-databricks_v1.91.0"
+        elif "amd64" in machine or "x86_64" in machine:
+            platform_str = "linux_amd64"
+            binary_name = "terraform-provider-databricks_v1.91.0"
+        else:
+            logger.error(f"Unsupported Linux architecture: {machine}")
+            return None
+    
+    else:
+        logger.error(f"Unsupported operating system: {system}")
+        return None
+    
+    # Construct path to binary
+    binary_path = (
+        BASE_DIR / ".terraform" / "providers" / "registry.terraform.io" / 
+        "databricks" / "databricks" / "1.91.0" / platform_str / binary_name
+    )
+    
+    logger.info(f"🔍 Detected platform: {system}/{machine} -> {platform_str}")
+    logger.info(f"🔍 Expected binary: {binary_path}")
+    
+    if binary_path.exists():
+        logger.info(f"✅ Terraform provider binary found")
+        return binary_path
+    else:
+        logger.warning(f"⚠️  Terraform provider binary not found at: {binary_path}")
+        logger.warning(f"   Run: terraform init")
+        return None
+
+
 class TerraformExporter:
-    """Handles Terraform export operations"""
+    """Handles Terraform export operations (cross-platform)"""
     
     def __init__(self):
-        self.exporter_binary = (
-            BASE_DIR / ".terraform" / "providers" / "registry.terraform.io" / 
-            "databricks" / "databricks" / "1.91.0" / "darwin_arm64" / 
-            "terraform-provider-databricks_v1.91.0"
-        )
+        self.exporter_binary = get_terraform_binary_path()
         
     async def run(
         self,

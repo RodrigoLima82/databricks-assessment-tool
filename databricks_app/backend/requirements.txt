@@ -6,5 +6,10 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 pydantic>=2.6.0
 websockets>=12.0
-weasyprint>=60.0
 markdown>=3.5
+
+# PDF Generation (tries in order: weasyprint -> xhtml2pdf -> reportlab)
+# Install at least ONE of these:
+weasyprint>=60.0          # Best quality (macOS/Linux with GTK)
+xhtml2pdf>=0.2.13         # Windows-friendly (pure Python)
+reportlab>=4.0.0          # Fallback (always works)

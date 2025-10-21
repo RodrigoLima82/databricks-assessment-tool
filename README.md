@@ -34,7 +34,8 @@ Ferramenta web interativa para:
 ✅ **Terraform Export** - Databricks Provider v1.91.0  
 ✅ **4 AI Agents** - Terraform Reader, Databricks Specialist, UCX Analyst, Report Generator  
 ✅ **UCX Integration** - Análise de assessments de migração Unity Catalog  
-✅ **PDF Export** - Relatórios profissionais com WeasyPrint  
+✅ **PDF Export** - Relatórios profissionais (WeasyPrint/xhtml2pdf/reportlab)  
+✅ **Cross-Platform** - Windows, macOS, Linux (detecção automática)  
 ✅ **Dynamic Agent Management** - Criação e seleção dinâmica de agentes  
 
 ---
@@ -91,8 +92,6 @@ databricks-assessment-tool/
 ├── run_app.sh                          # 🚀 Script principal (roda tudo)
 │
 ├── databricks_app/                     # ✨ Web Application
-│   ├── start.sh                        # Backend startup script
-│   │
 │   ├── backend/                        # 🐍 FastAPI Backend
 │   │   ├── main.py                     # API endpoints
 │   │   ├── executors.py                # Terraform & AI executors
@@ -151,10 +150,12 @@ databricks-assessment-tool/
 
 ### Pré-requisitos
 
-- **Python 3.13+**
+- **Python 3.8+** (testado em 3.8-3.13)
 - **Node.js 18+** e npm
-- **UV** (Python package manager): `brew install uv` ou `pip install uv`
-- **Terraform** (opcional, usa binário local)
+- **UV** (Python package manager): `brew install uv` (macOS) ou `pip install uv` (Windows/Linux)
+- **Terraform CLI** (opcional, usa binário local)
+
+**🪟 Windows**: Todos os componentes funcionam no Windows 10/11. O código detecta automaticamente a plataforma (Windows/macOS/Linux) e usa os binários corretos (`.exe` no Windows).
 
 ### 1. Clone o Repositório
 
@@ -222,10 +223,14 @@ ls -lh .terraform/providers/registry.terraform.io/databricks/databricks/1.91.0/*
 **Backend:**
 ```bash
 cd databricks_app/backend
-python3 -m venv venv
-source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+> **🪟 Windows**: Se WeasyPrint falhar (esperado no Windows), instale as alternativas:
+> ```bash
+> pip install xhtml2pdf reportlab
+> ```
+> O código usa automaticamente a melhor biblioteca disponível (WeasyPrint → xhtml2pdf → reportlab).
 
 **Frontend:**
 ```bash
@@ -243,12 +248,37 @@ uv sync
 
 ## 🚀 Como Rodar Localmente
 
-### Opção 1: Backend + Frontend Separados
+### Opção 1: Script Automatizado (Recomendado)
+
+**Python (Cross-platform):**
+```bash
+python run_app.py
+```
+
+**Shell (macOS/Linux):**
+```bash
+./run_app.sh
+```
+
+**Batch (Windows):**
+```cmd
+run_app.bat
+```
+
+O script automaticamente:
+- Verifica Python e Node.js
+- Carrega `.env`
+- Inicia backend (porta 8002)
+- Inicia frontend (porta 3002)
+- Abre navegador
+
+Acesse: `http://localhost:3002`
+
+### Opção 2: Backend + Frontend Separados (Debug)
 
 **Terminal 1 - Backend:**
 ```bash
 cd databricks_app/backend
-source venv/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 ```
 
@@ -256,14 +286,6 @@ uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 ```bash
 cd databricks_app/frontend
 npm run dev
-```
-
-Acesse: `http://localhost:3002`
-
-### Opção 2: Script Automatizado (Produção)
-
-```bash
-./run_app.sh
 ```
 
 ### ⏱️ Tempo de Execução (Medido)
@@ -392,31 +414,58 @@ O script vai automaticamente usar as novas portas! ✨
 
 ### Backend não inicia
 
+**macOS/Linux:**
 ```bash
-# Verificar porta
-lsof -i :8002
-
-# Recriar virtual environment
-cd databricks_app/backend
-rm -rf venv
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+lsof -i :8002  # Verificar o que está usando a porta
 ```
 
-### Frontend não inicia
-
-```bash
-# Limpar cache e reinstalar
-cd databricks_app/frontend
-rm -rf node_modules package-lock.json
-npm install
-npm run dev
+**Windows:**
+```cmd
+netstat -ano | findstr :8002
 ```
+
+**Solução**: Mude `BACKEND_PORT` no `.env` ou mate o processo usando a porta.
 
 ### Erro: "DATABRICKS_HOST not configured"
 
-Verifique se o `.env` está no **root do projeto** (não no databricks_app/)
+Verifique se o `.env` está no **root do projeto** (não no `databricks_app/`).
+
+### Erro: "Terraform provider binary not found"
+
+```bash
+terraform init  # Baixa o provider automaticamente
+```
+
+O código detecta automaticamente:
+- Windows: `terraform-provider-databricks_v1.91.0.exe`
+- macOS/Linux: `terraform-provider-databricks_v1.91.0`
+
+### Erro: "WeasyPrint not installed" (Windows)
+
+**Esperado no Windows!** Instale alternativas:
+```bash
+pip install xhtml2pdf reportlab
+```
+
+O código automaticamente usa a melhor biblioteca disponível.
+
+### 🪟 Windows: Antivirus bloqueando Terraform `.exe`
+
+Windows Defender pode bloquear o provider binary. **Solução**:
+1. Adicione exceção para a pasta `.terraform/`
+2. Ou desabilite temporariamente o antivirus
+
+### 🪟 Windows: PowerShell bloqueando scripts
+
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Reports não aparecem no frontend
+
+1. Verifique se `output_summary_agent/*.md` existem
+2. Check backend logs
+3. Teste endpoint: `curl http://localhost:8002/api/results/list`
 
 ### Erro: "Rate Limit Exceeded"
 
@@ -424,27 +473,6 @@ O sistema já otimiza tokens (redução de 99%), mas se ainda ocorrer:
 - Reduza número de arquivos Terraform no export
 - Aguarde alguns minutos (rate limit por minuto)
 - Verifique seu tier de FMAPI no Databricks
-
-### Erro: "WeasyPrint not installed"
-
-```bash
-cd databricks_app/backend
-source venv/bin/activate
-pip install weasyprint
-```
-
-### Reports não aparecem no frontend
-
-1. Verifique se `output_summary_agent/*.md` existem
-2. Check backend logs: `cat databricks_app/backend/logs/*.log`
-3. Teste endpoint: `curl http://localhost:8002/api/results/list`
-
-### Permission errors
-
-Verifique se o token tem permissões adequadas para:
-- Ler recursos do workspace
-- Executar Terraform export
-- Acessar arquivos UCX
 
 ---
 
