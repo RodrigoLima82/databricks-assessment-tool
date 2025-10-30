@@ -1,0 +1,37 @@
+{
+  "name": "databricks-assessment-tool",
+  "version": "1.0.0",
+  "description": "Databricks Infrastructure Assessment Tool",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "axios": "^1.6.2",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0",
+    "ace-builds": "^1.32.0",
+    "react-ace": "^10.1.0",
+    "js-yaml": "^4.1.0",
+    "@mui/material": "^5.14.18",
+    "@mui/icons-material": "^5.14.18",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "recharts": "^2.10.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.9.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  }
+}
+

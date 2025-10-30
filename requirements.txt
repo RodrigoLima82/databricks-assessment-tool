@@ -1,0 +1,23 @@
+# =============================================================================
+# Databricks Infrastructure Assessment Tool - Complete Dependencies
+# Install: pip install -r requirements.txt
+# =============================================================================
+
+# Web Framework (Backend API)
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+pyyaml>=6.0.1
+requests>=2.31.0
+python-dotenv>=1.0.0
+pydantic>=2.6.0
+websockets>=12.0
+markdown>=3.5
+
+# PDF Generation (100% pure Python - works everywhere)
+reportlab>=4.0.0         # Pure Python, no compilation needed
+
+# AI Agent (Databricks LLM via HTTP)
+pandas>=2.0.0            # Data processing for UCX Excel files
+openpyxl>=3.0.0          # Excel file reading
+
